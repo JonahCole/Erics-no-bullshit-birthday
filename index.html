@@ -7,6 +7,7 @@
   <title>Eric's Birthday Hunt</title>
   <link rel="stylesheet" href="styles.css?v=__VERSION__" />
   <link rel="preload" href="assets/rifle-shot.wav?v=__VERSION__" as="audio" type="audio/wav" />
+  <link rel="preload" href="assets/eric-head.png?v=__VERSION__" as="image" />
 </head>
 <body>
   <main id="app">
@@ -63,6 +64,45 @@
           <button id="dont-btn" class="secondary-btn">ABSOLUTELY NOT.</button>
         </div>
         <p class="outcome">Do it or don't. Either way, Eric is having a good day.</p>
+      </div>
+    </section>
+
+    <section id="success-screen" class="screen success-screen" aria-labelledby="success-title">
+      <div class="success-panel">
+        <div class="success-lights" aria-hidden="true">
+          <span></span><span></span><span></span><span></span>
+          <span></span><span></span><span></span><span></span>
+        </div>
+
+        <div id="flame-burst" class="flame-burst" aria-hidden="true">
+          <div class="flame flame-1"></div>
+          <div class="flame flame-2"></div>
+          <div class="flame flame-3"></div>
+          <div class="flame flame-4"></div>
+          <div class="flame flame-5"></div>
+        </div>
+
+        <p class="success-eyebrow">TASK ACCEPTED. UNFORTUNATE.</p>
+        <h2 id="success-title">Now do your job</h2>
+        <p class="success-copy">Eric is laughing because you said yes. That's on you.</p>
+
+        <div class="head-stage">
+          <img
+            id="eric-head"
+            class="eric-head"
+            src="assets/eric-head.png?v=__VERSION__"
+            alt="Sticker-style cutout of Eric's smiling head"
+          />
+          <span class="laugh-mark laugh-left" aria-hidden="true"></span>
+          <span class="laugh-mark laugh-right" aria-hidden="true"></span>
+          <span class="laugh-mark laugh-top" aria-hidden="true"></span>
+        </div>
+
+        <div class="success-actions">
+          <button id="start-over-btn" class="primary-btn">START OVER</button>
+          <button id="share-btn" class="secondary-btn">SHARE THIS APP</button>
+        </div>
+        <p class="success-footnote">Do the thing, share the nonsense, or start the whole circus over.</p>
       </div>
     </section>
 
