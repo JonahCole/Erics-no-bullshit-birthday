@@ -5,7 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#192015" />
   <title>Eric's Birthday Hunt</title>
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css?v=__VERSION__" />
+  <link rel="preload" href="assets/rifle-shot.wav?v=__VERSION__" as="audio" type="audio/wav" />
 </head>
 <body>
   <main id="app">
@@ -68,6 +69,26 @@
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
   </main>
 
-  <script src="app.js"></script>
+  <script>
+    // AUTO-UPDATE CHECK
+    // GitHub Pages can cache the document briefly. This tiny uncached version
+    // check lets an already-open/cached copy discover a newer deployment.
+    window.ERIC_APP_VERSION = '__VERSION__';
+    (async function checkForNewVersion() {
+      try {
+        const response = await fetch(`version.json?t=${Date.now()}`, { cache: 'no-store' });
+        if (!response.ok) return;
+        const { version } = await response.json();
+        if (version && version !== window.ERIC_APP_VERSION) {
+          const url = new URL(window.location.href);
+          url.searchParams.set('v', version.slice(0, 12));
+          window.location.replace(url.toString());
+        }
+      } catch (_) {
+        // A failed update check should never stop the birthday game.
+      }
+    })();
+  </script>
+  <script src="app.js?v=__VERSION__"></script>
 </body>
 </html>

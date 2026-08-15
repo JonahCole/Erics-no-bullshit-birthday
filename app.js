@@ -134,69 +134,78 @@ function spawnTargets() {
   });
 }
 
+// Real rifle recording: Tikka Model T3, .30-06, near-distance gunshot.
+// Source recording: Free Firearms SFX Library mirror (CC0 1.0).
+// The deployment workflow downloads it into assets/rifle-shot.wav.
+const RIFLE_SOUND_URL = 'assets/rifle-shot.wav?v=__VERSION__';
+const rifleSound = new Audio(RIFLE_SOUND_URL);
+rifleSound.preload = 'auto';
+rifleSound.volume = 0.95;
+
 function initAudio() {
   if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 }
 
-function shotSound(hit) {
+function primeRifleSound() {
+  // Ask the browser to start fetching the real recording while Eric is still aiming.
+  try { rifleSound.load(); } catch (_) {}
+}
+
+function fallbackShotSound(hit) {
+  // Short, punchy fallback only. Unlike the old version, there is no long
+  // noise burst, which is what made the synthesized shot sound like paper.
   try {
     initAudio();
     if (audioCtx.state === 'suspended') audioCtx.resume();
-
     const now = audioCtx.currentTime;
 
-    // Sharp rifle crack: a very short burst of filtered noise.
-    const crackLength = Math.floor(audioCtx.sampleRate * .09);
+    // Extremely short high-frequency transient = the "crack".
+    const crackLength = Math.floor(audioCtx.sampleRate * .008);
     const crackBuffer = audioCtx.createBuffer(1, crackLength, audioCtx.sampleRate);
     const crackData = crackBuffer.getChannelData(0);
     for (let i = 0; i < crackLength; i++) {
       const decay = 1 - (i / crackLength);
-      crackData[i] = (Math.random() * 2 - 1) * decay * decay;
+      crackData[i] = (Math.random() * 2 - 1) * decay * decay * decay;
     }
     const crack = audioCtx.createBufferSource();
     crack.buffer = crackBuffer;
     const crackFilter = audioCtx.createBiquadFilter();
     crackFilter.type = 'highpass';
-    crackFilter.frequency.value = 650;
+    crackFilter.frequency.value = 1800;
     const crackGain = audioCtx.createGain();
-    crackGain.gain.setValueAtTime(.42, now);
-    crackGain.gain.exponentialRampToValueAtTime(.001, now + .09);
+    crackGain.gain.setValueAtTime(.75, now);
+    crackGain.gain.exponentialRampToValueAtTime(.001, now + .012);
     crack.connect(crackFilter).connect(crackGain).connect(audioCtx.destination);
 
-    // Deeper report underneath the crack so it reads as a rifle, not a click/pop.
+    // Compact low/mid blast that phone speakers can actually reproduce.
     const boom = audioCtx.createOscillator();
     const boomGain = audioCtx.createGain();
     boom.type = 'triangle';
-    boom.frequency.setValueAtTime(hit ? 105 : 98, now);
-    boom.frequency.exponentialRampToValueAtTime(38, now + .16);
-    boomGain.gain.setValueAtTime(.28, now);
-    boomGain.gain.exponentialRampToValueAtTime(.001, now + .19);
+    boom.frequency.setValueAtTime(hit ? 165 : 155, now);
+    boom.frequency.exponentialRampToValueAtTime(72, now + .11);
+    boomGain.gain.setValueAtTime(.34, now);
+    boomGain.gain.exponentialRampToValueAtTime(.001, now + .13);
     boom.connect(boomGain).connect(audioCtx.destination);
-
-    // Tiny outdoor-style tail.
-    const tailLength = Math.floor(audioCtx.sampleRate * .22);
-    const tailBuffer = audioCtx.createBuffer(1, tailLength, audioCtx.sampleRate);
-    const tailData = tailBuffer.getChannelData(0);
-    for (let i = 0; i < tailLength; i++) {
-      const decay = 1 - (i / tailLength);
-      tailData[i] = (Math.random() * 2 - 1) * decay * decay * .35;
-    }
-    const tail = audioCtx.createBufferSource();
-    tail.buffer = tailBuffer;
-    const tailFilter = audioCtx.createBiquadFilter();
-    tailFilter.type = 'bandpass';
-    tailFilter.frequency.value = 420;
-    tailFilter.Q.value = .7;
-    const tailGain = audioCtx.createGain();
-    tailGain.gain.setValueAtTime(.12, now + .018);
-    tailGain.gain.exponentialRampToValueAtTime(.001, now + .22);
-    tail.connect(tailFilter).connect(tailGain).connect(audioCtx.destination);
 
     crack.start(now);
     boom.start(now);
-    tail.start(now + .018);
-    boom.stop(now + .2);
+    boom.stop(now + .14);
   } catch (_) {}
+}
+
+function shotSound(hit) {
+  try {
+    // Restart the real rifle sample immediately on every trigger pull.
+    rifleSound.pause();
+    rifleSound.currentTime = 0;
+    rifleSound.volume = 0.95;
+    const playback = rifleSound.play();
+    if (playback && typeof playback.catch === 'function') {
+      playback.catch(() => fallbackShotSound(hit));
+    }
+  } catch (_) {
+    fallbackShotSound(hit);
+  }
 }
 
 function fire(x, y, isHit, targetEl) {
@@ -276,6 +285,7 @@ range.addEventListener('click', e => {
 });
 
 document.getElementById('start-btn').addEventListener('click', () => {
+  primeRifleSound();
   spawnTargets();
   showScreen('hunt');
 });
