@@ -141,16 +141,61 @@ function initAudio() {
 function shotSound(hit) {
   try {
     initAudio();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+
     const now = audioCtx.currentTime;
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.type = 'square';
-    osc.frequency.setValueAtTime(hit ? 125 : 105, now);
-    osc.frequency.exponentialRampToValueAtTime(42, now + .09);
-    gain.gain.setValueAtTime(.12, now);
-    gain.gain.exponentialRampToValueAtTime(.001, now + .11);
-    osc.connect(gain).connect(audioCtx.destination);
-    osc.start(now); osc.stop(now + .12);
+
+    // Sharp rifle crack: a very short burst of filtered noise.
+    const crackLength = Math.floor(audioCtx.sampleRate * .09);
+    const crackBuffer = audioCtx.createBuffer(1, crackLength, audioCtx.sampleRate);
+    const crackData = crackBuffer.getChannelData(0);
+    for (let i = 0; i < crackLength; i++) {
+      const decay = 1 - (i / crackLength);
+      crackData[i] = (Math.random() * 2 - 1) * decay * decay;
+    }
+    const crack = audioCtx.createBufferSource();
+    crack.buffer = crackBuffer;
+    const crackFilter = audioCtx.createBiquadFilter();
+    crackFilter.type = 'highpass';
+    crackFilter.frequency.value = 650;
+    const crackGain = audioCtx.createGain();
+    crackGain.gain.setValueAtTime(.42, now);
+    crackGain.gain.exponentialRampToValueAtTime(.001, now + .09);
+    crack.connect(crackFilter).connect(crackGain).connect(audioCtx.destination);
+
+    // Deeper report underneath the crack so it reads as a rifle, not a click/pop.
+    const boom = audioCtx.createOscillator();
+    const boomGain = audioCtx.createGain();
+    boom.type = 'triangle';
+    boom.frequency.setValueAtTime(hit ? 105 : 98, now);
+    boom.frequency.exponentialRampToValueAtTime(38, now + .16);
+    boomGain.gain.setValueAtTime(.28, now);
+    boomGain.gain.exponentialRampToValueAtTime(.001, now + .19);
+    boom.connect(boomGain).connect(audioCtx.destination);
+
+    // Tiny outdoor-style tail.
+    const tailLength = Math.floor(audioCtx.sampleRate * .22);
+    const tailBuffer = audioCtx.createBuffer(1, tailLength, audioCtx.sampleRate);
+    const tailData = tailBuffer.getChannelData(0);
+    for (let i = 0; i < tailLength; i++) {
+      const decay = 1 - (i / tailLength);
+      tailData[i] = (Math.random() * 2 - 1) * decay * decay * .35;
+    }
+    const tail = audioCtx.createBufferSource();
+    tail.buffer = tailBuffer;
+    const tailFilter = audioCtx.createBiquadFilter();
+    tailFilter.type = 'bandpass';
+    tailFilter.frequency.value = 420;
+    tailFilter.Q.value = .7;
+    const tailGain = audioCtx.createGain();
+    tailGain.gain.setValueAtTime(.12, now + .018);
+    tailGain.gain.exponentialRampToValueAtTime(.001, now + .22);
+    tail.connect(tailFilter).connect(tailGain).connect(audioCtx.destination);
+
+    crack.start(now);
+    boom.start(now);
+    tail.start(now + .018);
+    boom.stop(now + .2);
   } catch (_) {}
 }
 
@@ -164,6 +209,11 @@ function fire(x, y, isHit, targetEl) {
   crosshair.classList.add('firing');
   setTimeout(() => crosshair.classList.remove('firing'), 100);
   shotSound(isHit);
+
+  // Keep the physical kick on devices that support vibration/haptics.
+  try {
+    if (navigator.vibrate) navigator.vibrate(isHit ? [45, 18, 28] : 45);
+  } catch (_) {}
 
   if (!isHit) {
     let missIdx;
