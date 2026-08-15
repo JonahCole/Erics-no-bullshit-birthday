@@ -42,7 +42,6 @@ const cards = [
   { category: "BIRTHDAY", title: "Have one more good story than you had yesterday.", flavor: "Or don't. Doesn't bother me." }
 ];
 
-
 const missMessages = [
   "MISS. VERY IMPRESSIVE.",
   "YOUR AIM IS BETTER THAN JUSTIN'S. BARELY.",
@@ -69,7 +68,8 @@ const missMessages = [
 const screens = {
   welcome: document.getElementById('welcome'),
   hunt: document.getElementById('hunt'),
-  card: document.getElementById('card-screen')
+  card: document.getElementById('card-screen'),
+  success: document.getElementById('success-screen')
 };
 const range = document.getElementById('range');
 const targets = document.getElementById('targets');
@@ -81,12 +81,15 @@ const cardTitle = document.getElementById('card-title');
 const cardFlavor = document.getElementById('card-flavor');
 const cardCategory = document.getElementById('card-category');
 const cardNumber = document.getElementById('card-number');
+const successScreen = document.getElementById('success-screen');
+const flameBurst = document.getElementById('flame-burst');
 
 let lastCard = -1;
 let lastMiss = -1;
 let locked = false;
 let toastTimer;
 let audioCtx;
+let rifleStopTimer;
 
 function showScreen(name) {
   Object.values(screens).forEach(s => s.classList.remove('active'));
@@ -141,26 +144,21 @@ const RIFLE_SOUND_URL = 'assets/rifle-shot.wav?v=__VERSION__';
 const rifleSound = new Audio(RIFLE_SOUND_URL);
 rifleSound.preload = 'auto';
 rifleSound.volume = 0.95;
-let rifleStopTimer;
 
 function initAudio() {
   if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 }
 
 function primeRifleSound() {
-  // Ask the browser to start fetching the real recording while Eric is still aiming.
   try { rifleSound.load(); } catch (_) {}
 }
 
 function fallbackShotSound(hit) {
-  // Short, punchy fallback only. Unlike the old version, there is no long
-  // noise burst, which is what made the synthesized shot sound like paper.
   try {
     initAudio();
     if (audioCtx.state === 'suspended') audioCtx.resume();
     const now = audioCtx.currentTime;
 
-    // Extremely short high-frequency transient = the "crack".
     const crackLength = Math.floor(audioCtx.sampleRate * .008);
     const crackBuffer = audioCtx.createBuffer(1, crackLength, audioCtx.sampleRate);
     const crackData = crackBuffer.getChannelData(0);
@@ -178,7 +176,6 @@ function fallbackShotSound(hit) {
     crackGain.gain.exponentialRampToValueAtTime(.001, now + .012);
     crack.connect(crackFilter).connect(crackGain).connect(audioCtx.destination);
 
-    // Compact low/mid blast that phone speakers can actually reproduce.
     const boom = audioCtx.createOscillator();
     const boomGain = audioCtx.createGain();
     boom.type = 'triangle';
@@ -197,17 +194,15 @@ function fallbackShotSound(hit) {
 function shotSound(hit) {
   try {
     clearTimeout(rifleStopTimer);
-
     rifleSound.pause();
     rifleSound.currentTime = 0;
     rifleSound.volume = 0.95;
-
     const playback = rifleSound.play();
 
     rifleStopTimer = setTimeout(() => {
       rifleSound.pause();
       rifleSound.currentTime = 0;
-    }, 1400);
+    }, 1200);
 
     if (playback && typeof playback.catch === 'function') {
       playback.catch(() => fallbackShotSound(hit));
@@ -228,9 +223,8 @@ function fire(x, y, isHit, targetEl) {
   setTimeout(() => crosshair.classList.remove('firing'), 100);
   shotSound(isHit);
 
-  // Keep the physical kick on devices that support vibration/haptics.
   try {
-    if (navigator.vibrate) navigator.vibrate(isHit ? 65: 45);
+    if (navigator.vibrate) navigator.vibrate(isHit ? 65 : 45);
   } catch (_) {}
 
   if (!isHit) {
@@ -266,17 +260,73 @@ function pickCard() {
   cardNumber.textContent = '#' + String(idx + 1).padStart(2, '0');
 }
 
+function showToast(message) {
+  clearTimeout(toastTimer);
+  toast.textContent = message;
+  toast.classList.add('show');
+  toastTimer = setTimeout(() => toast.classList.remove('show'), 1800);
+}
+
 function backToHunt(message) {
   showScreen('hunt');
   spawnTargets();
   if (message) showToast(message);
 }
 
-function showToast(message) {
-  clearTimeout(toastTimer);
-  toast.textContent = message;
-  toast.classList.add('show');
-  toastTimer = setTimeout(() => toast.classList.remove('show'), 1800);
+function startOver() {
+  showScreen('welcome');
+  showToast('Back to the beginning. Very brave.');
+}
+
+function triggerFlames() {
+  if (!flameBurst) return;
+  const flames = flameBurst.querySelectorAll('.flame');
+  flames.forEach(flame => {
+    flame.style.animation = 'none';
+  });
+  // force reflow so the animation restarts every time the success screen appears
+  void flameBurst.offsetWidth;
+  flames.forEach(flame => {
+    flame.style.animation = '';
+  });
+}
+
+function showSuccess() {
+  showScreen('success');
+  successScreen.classList.remove('entering');
+  void successScreen.offsetWidth;
+  successScreen.classList.add('entering');
+  triggerFlames();
+  setTimeout(() => successScreen.classList.remove('entering'), 1700);
+}
+
+async function shareApp() {
+  const url = window.location.origin + window.location.pathname;
+  const shareData = {
+    title: "Eric's Birthday Hunt",
+    text: "Shoot a gift. Get told what to do. Bad decisions encouraged.",
+    url
+  };
+
+  try {
+    if (navigator.share) {
+      await navigator.share(shareData);
+      showToast('Shared. You are now part of the problem.');
+      return;
+    }
+  } catch (_) {
+    // user cancelled or share failed; fall through to clipboard when possible
+  }
+
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(url);
+      showToast('Link copied. Go spread the nonsense.');
+      return;
+    }
+  } catch (_) {}
+
+  showToast(url);
 }
 
 range.addEventListener('pointermove', e => {
@@ -299,8 +349,10 @@ document.getElementById('start-btn').addEventListener('click', () => {
   showScreen('hunt');
 });
 document.getElementById('home-btn').addEventListener('click', () => showScreen('welcome'));
-document.getElementById('do-btn').addEventListener('click', () => backToHunt('Fine. Character development, apparently.'));
+document.getElementById('do-btn').addEventListener('click', () => showSuccess());
 document.getElementById('dont-btn').addEventListener('click', () => backToHunt('Correct. It was legally optional.'));
+document.getElementById('start-over-btn').addEventListener('click', () => startOver());
+document.getElementById('share-btn').addEventListener('click', () => shareApp());
 
 window.addEventListener('resize', () => {
   if (screens.hunt.classList.contains('active')) spawnTargets();
