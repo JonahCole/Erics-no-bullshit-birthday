@@ -207,7 +207,7 @@ function shotSound(hit) {
     rifleStopTimer = setTimeout(() => {
       rifleSound.pause();
       rifleSound.currentTime = 0;
-    }, 700);
+    }, 1400);
 
     if (playback && typeof playback.catch === 'function') {
       playback.catch(() => fallbackShotSound(hit));
