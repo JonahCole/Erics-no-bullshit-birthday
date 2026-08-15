@@ -568,3 +568,8 @@ h1 span { color: #b8c08a; }
   .head-stage { min-height: 220px; margin: 12px 0 20px; }
 }
 
+/* Success screen cleanup */
+.flame-burst,
+.success-lights {
+  display: none !important;
+}
