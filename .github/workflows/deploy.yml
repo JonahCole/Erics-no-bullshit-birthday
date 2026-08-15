@@ -33,6 +33,10 @@ jobs:
           mkdir -p _site/assets
           cp index.html styles.css app.js _site/
 
+          if [ -d assets ]; then
+            cp -R assets/. _site/assets/
+          fi
+
           curl --location --fail --retry 3 \
             "https://github.com/buddingmonkey/FreeFirearmsSFXLibrary/raw/refs/heads/main/Prepared%20SFX/Tikka/W_29P.wav" \
             --output _site/assets/rifle-shot.wav
