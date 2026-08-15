@@ -194,7 +194,7 @@ h1 span { color: #b8c08a; }
   background:#efe4c9; color:#331f15; padding:10px 16px; border:3px solid #331f15; opacity:0;
   font-size:clamp(20px,4vw,34px); pointer-events:none;
 }
-.miss.show { animation: miss .65s ease; }
+.miss.show { animation: miss 2.5s ease; }
 @keyframes miss { 0%{opacity:0; transform:translate(-50%,-50%) rotate(-4deg) scale(.65)} 20%,70%{opacity:1; transform:translate(-50%,-50%) rotate(-4deg) scale(1)} 100%{opacity:0; transform:translate(-50%,-50%) rotate(-4deg) scale(1.06)} }
 .range-tip {
   position:absolute; z-index:10; left:50%; bottom:max(14px, env(safe-area-inset-bottom)); transform:translateX(-50%);
