@@ -230,7 +230,7 @@ function fire(x, y, isHit, targetEl) {
 
   // Keep the physical kick on devices that support vibration/haptics.
   try {
-    if (navigator.vibrate) navigator.vibrate(isHit ? [45, 18, 28] : 45);
+    if (navigator.vibrate) navigator.vibrate(isHit ? 65: 45);
   } catch (_) {}
 
   if (!isHit) {
