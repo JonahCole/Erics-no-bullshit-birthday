@@ -196,11 +196,19 @@ function fallbackShotSound(hit) {
 
 function shotSound(hit) {
   try {
-    // Restart the real rifle sample immediately on every trigger pull.
+    clearTimeout(rifleStopTimer);
+
     rifleSound.pause();
     rifleSound.currentTime = 0;
     rifleSound.volume = 0.95;
+
     const playback = rifleSound.play();
+
+    rifleStopTimer = setTimeout(() => {
+      rifleSound.pause();
+      rifleSound.currentTime = 0;
+    }, 700);
+
     if (playback && typeof playback.catch === 'function') {
       playback.catch(() => fallbackShotSound(hit));
     }
