@@ -141,6 +141,7 @@ const RIFLE_SOUND_URL = 'assets/rifle-shot.wav?v=__VERSION__';
 const rifleSound = new Audio(RIFLE_SOUND_URL);
 rifleSound.preload = 'auto';
 rifleSound.volume = 0.95;
+let rifleStopTimer;
 
 function initAudio() {
   if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
