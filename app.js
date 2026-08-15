@@ -42,6 +42,30 @@ const cards = [
   { category: "BIRTHDAY", title: "Have one more good story than you had yesterday.", flavor: "Or don't. Doesn't bother me." }
 ];
 
+
+const missMessages = [
+  "MISS. VERY IMPRESSIVE.",
+  "YOUR AIM IS BETTER THAN JUSTIN'S. BARELY.",
+  "YOU HAVE PEYTON MANNING'S ACCURACY.",
+  "DID YOU FORGET YOUR GLASSES?",
+  "THAT GIFT WAS STANDING STILL.",
+  "MAYBE STICK TO FISHING.",
+  "GOOD NEWS FOR THE LOCAL WILDLIFE.",
+  "BROAD SIDE OF A BARN REMAINS UNDEFEATED.",
+  "WIND MUST BE BRUTAL IN HERE.",
+  "THE SCOPE IS FINE. PROBABLY.",
+  "THAT WAS A WARNING SHOT, RIGHT?",
+  "YOU COULDN'T HIT WATER FROM A BOAT.",
+  "TRY CLOSING ONE EYE. OR BOTH.",
+  "THE DEER ARE FEELING PRETTY SAFE RIGHT NOW.",
+  "NICE SHOT. WRONG SPOT.",
+  "ERIC HAS SEEN ENOUGH.",
+  "AIMING IS APPARENTLY OPTIONAL.",
+  "THE PRESENT WILL BE HERE WHEN YOU'RE READY.",
+  "AT LEAST NOBODY GOT HURT.",
+  "WE'LL CALL THAT A PRACTICE ROUND."
+];
+
 const screens = {
   welcome: document.getElementById('welcome'),
   hunt: document.getElementById('hunt'),
@@ -59,6 +83,7 @@ const cardCategory = document.getElementById('card-category');
 const cardNumber = document.getElementById('card-number');
 
 let lastCard = -1;
+let lastMiss = -1;
 let locked = false;
 let toastTimer;
 let audioCtx;
@@ -141,6 +166,11 @@ function fire(x, y, isHit, targetEl) {
   shotSound(isHit);
 
   if (!isHit) {
+    let missIdx;
+    do missIdx = Math.floor(Math.random() * missMessages.length);
+    while (missMessages.length > 1 && missIdx === lastMiss);
+    lastMiss = missIdx;
+    miss.textContent = missMessages[missIdx];
     miss.classList.remove('show');
     void miss.offsetWidth;
     miss.classList.add('show');
